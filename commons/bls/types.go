@@ -14,9 +14,8 @@ var (
 )
 
 type Policy struct {
-	MinSignatures      int      `json:"min_signatures"`
-	OptionalSignatures []string `json:"optional_signatures"`
-	RequiredSignatures []string `json:"required_signatures"`
+	MinAccounts      int
+	RequiredAccounts [][]byte
 }
 
 type KeyPair struct {

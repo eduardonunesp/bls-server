@@ -4,6 +4,8 @@ import (
 	"crypto/rand"
 
 	chiaBLS "github.com/chuwt/chia-bls-go"
+	"github.com/eduardonunesp/bls-server/commons/proto"
+	protobuf "google.golang.org/protobuf/proto"
 )
 
 const bitSize = 256
@@ -28,4 +30,10 @@ func (kp *KeyPair) GetPublicKey() []byte {
 
 func (kp *KeyPair) GetHexPublicKey() string {
 	return kp.secretKey.GetPublicKey().Hex()
+}
+
+func (kp *KeyPair) Serialize() ([]byte, error) {
+	return protobuf.Marshal(&proto.Account{
+		PublicKey: kp.GetPublicKey(),
+	})
 }

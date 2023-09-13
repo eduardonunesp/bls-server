@@ -1,7 +1,6 @@
 package bls
 
 import (
-	"encoding/hex"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -35,7 +34,7 @@ func TestPolicies(t *testing.T) {
 		},
 		{
 			name: "Test default policy with required sig",
-			p:    NewPolicy(WithRequiredSignatures("0x" + hex.EncodeToString([]byte{0x01}))),
+			p:    NewPolicy(WithRequiredSignatures([]byte{0x01})),
 			pks:  [][]byte{{0x01}, {0x02}},
 		},
 	}

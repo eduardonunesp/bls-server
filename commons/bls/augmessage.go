@@ -2,6 +2,8 @@ package bls
 
 import (
 	chiaBLS "github.com/chuwt/chia-bls-go"
+	"github.com/eduardonunesp/bls-server/commons/proto"
+	protobuf "google.golang.org/protobuf/proto"
 )
 
 func NewAugMessage(message []byte) *AugMessage {
@@ -20,16 +22,38 @@ func NewAugMessageWithPolicy(message []byte, policy *Policy) *AugMessage {
 	}
 }
 
+func Unserialize(data []byte) (*AugMessage, error) {
+	var am proto.AugMessage
+	if err := protobuf.Unmarshal(data, &am); err != nil {
+		return nil, err
+	}
+
+	var accounts = make([][]byte, len(am.Policy.RequiredAccounts))
+	for i, a := range am.Policy.RequiredAccounts {
+		accounts[i] = a.PublicKey
+	}
+
+	return &AugMessage{
+		policy: &Policy{
+			MinAccounts:      int(am.Policy.MinAccounts),
+			RequiredAccounts: accounts,
+		},
+		message:    am.Msg,
+		signatures: am.Signatures,
+		asm:        new(chiaBLS.AugSchemeMPL),
+	}, nil
+}
+
 func (am AugMessage) Policy() *Policy {
 	return am.policy
 }
 
 func (am *AugMessage) sign(kp *KeyPair) ([]byte, error) {
-	rJSON, err := am.policy.ToJSON()
+	bs, err := am.policy.Serialize()
 	if err != nil {
 		return nil, err
 	}
-	msg := append(rJSON, am.message...)
+	msg := append(bs, am.message...)
 	sig := am.asm.Sign(kp.secretKey, msg)
 	am.signatures = append(am.signatures, sig)
 	return sig, nil
@@ -58,14 +82,14 @@ func (am *AugMessage) AggregateVerify(aggSig []byte, pks ...[]byte) (bool, error
 		return false, err
 	}
 
-	rJSON, err := am.policy.ToJSON()
+	bs, err := am.policy.Serialize()
 	if err != nil {
 		return false, err
 	}
 
 	msgs := make([][]byte, len(am.signatures))
 	for i := range msgs {
-		msg := append(rJSON, am.message...)
+		msg := append(bs, am.message...)
 		msgs[i] = msg
 	}
 
@@ -74,4 +98,22 @@ func (am *AugMessage) AggregateVerify(aggSig []byte, pks ...[]byte) (bool, error
 		msgs,
 		aggSig,
 	), nil
+}
+
+func (am *AugMessage) Serialize() ([]byte, error) {
+	accounts := make([]*proto.Account, len(am.policy.RequiredAccounts))
+	for i, pk := range am.policy.RequiredAccounts {
+		accounts[i] = &proto.Account{
+			PublicKey: pk,
+		}
+	}
+
+	return protobuf.Marshal(&proto.AugMessage{
+		Policy: &proto.Policy{
+			MinAccounts:      int32(am.policy.MinAccounts),
+			RequiredAccounts: accounts,
+		},
+		Msg:        am.message,
+		Signatures: am.signatures,
+	})
 }

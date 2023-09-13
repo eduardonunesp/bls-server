@@ -5,6 +5,7 @@ go 1.21.1
 require (
 	github.com/chuwt/chia-bls-go v0.1.0
 	github.com/stretchr/testify v1.8.4
+	google.golang.org/protobuf v1.31.0
 )
 
 require (

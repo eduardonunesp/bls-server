@@ -1,18 +1,17 @@
 package bls
 
 import (
-	"encoding/hex"
+	"bytes"
 	"encoding/json"
-	"fmt"
+
+	"github.com/eduardonunesp/bls-server/commons/proto"
+	protobuf "google.golang.org/protobuf/proto"
 )
 
 type PolicyOption func(*Policy)
 
 func NewPolicy(policyOptions ...PolicyOption) *Policy {
-	policy := &Policy{
-		MinSignatures:      0,
-		RequiredSignatures: make([]string, 0),
-	}
+	policy := &Policy{}
 
 	for _, opt := range policyOptions {
 		opt(policy)
@@ -23,19 +22,13 @@ func NewPolicy(policyOptions ...PolicyOption) *Policy {
 
 func WithMinSignatures(min int) PolicyOption {
 	return func(r *Policy) {
-		r.MinSignatures = min
+		r.MinAccounts = min
 	}
 }
 
-func WithRequiredSignatures(pks ...string) PolicyOption {
+func WithRequiredSignatures(pks ...[]byte) PolicyOption {
 	return func(r *Policy) {
-		r.RequiredSignatures = pks
-	}
-}
-
-func WithOptionalSignatures(pks ...string) PolicyOption {
-	return func(r *Policy) {
-		r.OptionalSignatures = pks
+		r.RequiredAccounts = pks
 	}
 }
 
@@ -47,21 +40,30 @@ func PolicyFromJSON(data []byte) (*Policy, error) {
 	return r, nil
 }
 
-func (r *Policy) ToJSON() ([]byte, error) {
-	return json.Marshal(r)
+func (r *Policy) Serialize() ([]byte, error) {
+	accounts := make([]*proto.Account, len(r.RequiredAccounts))
+	for i, pk := range r.RequiredAccounts {
+		accounts[i] = &proto.Account{
+			PublicKey: pk,
+		}
+	}
+
+	return protobuf.Marshal(&proto.Policy{
+		MinAccounts:      int32(r.MinAccounts),
+		RequiredAccounts: accounts,
+	})
 }
 
 func (r *Policy) Validate(pks ...[]byte) error {
-	if len(pks) < r.MinSignatures {
+	if len(pks) < r.MinAccounts {
 		return ErrMinSignaturesNotMet
 	}
 
-	if len(r.RequiredSignatures) > 0 {
+	if len(r.RequiredAccounts) > 0 {
 		found := false
 		for _, pk := range pks {
-			pk := fmt.Sprintf("0x%s", hex.EncodeToString(pk))
-			for _, sig := range r.RequiredSignatures {
-				if pk == sig {
+			for _, sig := range r.RequiredAccounts {
+				if bytes.Compare(pk, sig) == 0 {
 					found = true
 				}
 			}

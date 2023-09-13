@@ -1,7 +1,0 @@
-syntax = "proto3";
-package proto;
-option go_package = "github.com/eduardonunesp/bls-server/commons/proto";
-
-message Sign {
-    bytes aug_message = 1;
-}

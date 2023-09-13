@@ -1,4 +1,4 @@
-package crypto
+package bls
 
 import (
 	"errors"
@@ -13,7 +13,7 @@ var (
 	ErrOptionalSignaturesNotMet = errors.New("optional signatures not met")
 )
 
-type Rules struct {
+type Policy struct {
 	MinSignatures      int      `json:"min_signatures"`
 	OptionalSignatures []string `json:"optional_signatures"`
 	RequiredSignatures []string `json:"required_signatures"`
@@ -24,7 +24,7 @@ type KeyPair struct {
 }
 
 type AugMessage struct {
-	rules      *Rules
+	policy     *Policy
 	message    []byte
 	signatures [][]byte
 	asm        *bls.AugSchemeMPL

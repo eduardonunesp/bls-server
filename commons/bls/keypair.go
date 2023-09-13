@@ -1,9 +1,9 @@
-package crypto
+package bls
 
 import (
 	"crypto/rand"
 
-	bls "github.com/chuwt/chia-bls-go"
+	chiaBLS "github.com/chuwt/chia-bls-go"
 )
 
 const bitSize = 256
@@ -12,13 +12,13 @@ func NewKeyPair() *KeyPair {
 	entropy := make([]byte, bitSize/8)
 	_, _ = rand.Read(entropy) // err is always nil
 	return &KeyPair{
-		secretKey: bls.KeyFromBytes(entropy),
+		secretKey: chiaBLS.KeyFromBytes(entropy),
 	}
 }
 
 func NewKeyPairFromMnemonic(mnemonic string, passphrase string) *KeyPair {
 	return &KeyPair{
-		secretKey: bls.KeyGenWithMnemonic(mnemonic, passphrase),
+		secretKey: chiaBLS.KeyGenWithMnemonic(mnemonic, passphrase),
 	}
 }
 

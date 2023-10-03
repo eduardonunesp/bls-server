@@ -1,0 +1,12 @@
+syntax = "proto3";
+import "augmessage.proto";
+package proto;
+option go_package = "github.com/eduardonunesp/bls-server/commons/proto";
+
+service SendAugMessageService {
+    rpc InitSign(AugMessage) returns (InitSignResponse);
+}
+
+message InitSignResponse {
+    string uuid = 1;
+}

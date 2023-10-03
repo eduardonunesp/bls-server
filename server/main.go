@@ -1,60 +1,61 @@
 package main
 
 import (
+	"context"
+	"flag"
 	"fmt"
 	"log"
+	"net"
 
 	"github.com/eduardonunesp/bls-server/commons/bls"
+	"github.com/eduardonunesp/bls-server/commons/proto"
+	"github.com/eduardonunesp/bls-server/server/internal"
+	"github.com/google/uuid"
+	"google.golang.org/grpc"
 )
 
-var userMnemonic = "" +
-	"media spike luggage ramp famous gentle social wolf sing raven student involve " +
-	"poverty team capital inspire lumber hat park nose effort still fatigue supply"
+var (
+	port = flag.Int("port", 50050, "The server port")
+)
 
-var mpcMnemonic = "" +
-	"media spike luggage ramp famous gentle social wolf sing raven student involve " +
-	"poverty team capital inspire supply hat park nose effort still fatigue lumber"
+type augMessageServer struct {
+	proto.UnimplementedSendAugMessageServiceServer
+	memoryDB *internal.MemoryDB
+}
+
+func (a augMessageServer) InitSign(_ context.Context, req *proto.AugMessage) (*proto.InitSignResponse, error) {
+	accounts := make([][]byte, len(req.Policy.RequiredAccounts))
+	for i, acc := range req.Policy.RequiredAccounts {
+		accounts[i] = acc.PublicKey
+	}
+
+	am := bls.NewAugMessageWithPolicy(req.Msg, bls.NewPolicy(
+		bls.WithMinAccounts(int(req.Policy.MinAccounts)),
+		bls.WithRequiredAccounts(accounts...),
+	))
+
+	uuid := uuid.New().String()
+
+	a.memoryDB.Set(uuid, am)
+
+	return &proto.InitSignResponse{
+		Uuid: uuid,
+	}, nil
+}
 
 func main() {
-	user := bls.NewKeyPairFromMnemonic(userMnemonic, "")
-	mpc := bls.NewKeyPairFromMnemonic(mpcMnemonic, "")
-
-	agm := bls.NewAugMessageWithPolicy(
-		[]byte("some message"),
-		bls.NewPolicy(
-			bls.WithMinSignatures(2),
-			bls.WithRequiredSignatures(user.GetPublicKey()),
-		),
-	)
-
-	if err := agm.Sign(user, mpc); err != nil {
-		log.Fatal(err)
-	}
-
-	aggSign, err := agm.Aggregate()
+	flag.Parse()
+	lis, err := net.Listen("tcp", fmt.Sprintf("localhost:%d", *port))
 	if err != nil {
+		log.Fatalf("failed to listen: %v", err)
+	}
+	var opts []grpc.ServerOption
+
+	grpcServer := grpc.NewServer(opts...)
+	proto.RegisterSendAugMessageServiceServer(grpcServer, &augMessageServer{
+		memoryDB: internal.NewMemoryDB(),
+	})
+	if err := grpcServer.Serve(lis); err != nil {
 		log.Fatal(err)
 	}
-
-	bs, err := agm.Serialize()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	agm2, err := bls.Unserialize(bs)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	result, err := agm2.AggregateVerify(
-		aggSign,
-		user.GetPublicKey(),
-		mpc.GetPublicKey(),
-	)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	fmt.Println(result)
-
 }

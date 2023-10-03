@@ -1,6 +1,8 @@
 package bls
 
 import (
+	"fmt"
+
 	chiaBLS "github.com/chuwt/chia-bls-go"
 	"github.com/eduardonunesp/bls-server/commons/proto"
 	protobuf "google.golang.org/protobuf/proto"
@@ -42,6 +44,10 @@ func Unserialize(data []byte) (*AugMessage, error) {
 		signatures: am.Signatures,
 		asm:        new(chiaBLS.AugSchemeMPL),
 	}, nil
+}
+
+func (am AugMessage) String() string {
+	return fmt.Sprintf("AugMessage{policy: %+v, message: %+v, signatures: %s}", am.policy, am.message, am.signatures)
 }
 
 func (am AugMessage) Policy() *Policy {

@@ -20,13 +20,13 @@ func NewPolicy(policyOptions ...PolicyOption) *Policy {
 	return policy
 }
 
-func WithMinSignatures(min int) PolicyOption {
+func WithMinAccounts(min int) PolicyOption {
 	return func(r *Policy) {
 		r.MinAccounts = min
 	}
 }
 
-func WithRequiredSignatures(pks ...[]byte) PolicyOption {
+func WithRequiredAccounts(pks ...[]byte) PolicyOption {
 	return func(r *Policy) {
 		r.RequiredAccounts = pks
 	}

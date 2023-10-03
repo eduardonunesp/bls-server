@@ -24,17 +24,17 @@ func TestPolicies(t *testing.T) {
 		},
 		{
 			name: "Test default policy with min sig of 1",
-			p:    NewPolicy(WithMinSignatures(1)),
+			p:    NewPolicy(WithMinAccounts(1)),
 			pks:  [][]byte{{0x01}},
 		},
 		{
 			name: "Test default policy with min sig of 2",
-			p:    NewPolicy(WithMinSignatures(2)),
+			p:    NewPolicy(WithMinAccounts(2)),
 			pks:  [][]byte{{0x01}, {0x02}, {0x03}},
 		},
 		{
 			name: "Test default policy with required sig",
-			p:    NewPolicy(WithRequiredSignatures([]byte{0x01})),
+			p:    NewPolicy(WithRequiredAccounts([]byte{0x01})),
 			pks:  [][]byte{{0x01}, {0x02}},
 		},
 	}
